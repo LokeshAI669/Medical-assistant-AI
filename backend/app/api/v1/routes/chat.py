@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.services.llm_service import get_ai_response
 from app.services.triage_service import analyze_symptoms
 from app.db.session import SessionLocal
 from app.db.models.chat import Chat
-from app.core.security import get_current_user
 
 router = APIRouter()
 
@@ -18,13 +17,10 @@ class ChatRequest(BaseModel):
 
 
 # =========================
-# 💬 CHAT (PROTECTED)
+# 💬 CHAT (NO AUTH)
 # =========================
 @router.post("/")
-def chat(
-    req: ChatRequest,
-    user: str = Depends(get_current_user)  # 🔐 PROTECTED ROUTE
-):
+def chat(req: ChatRequest):
     db = SessionLocal()
 
     try:
@@ -57,7 +53,7 @@ def chat(
         db.commit()
 
         return {
-            "user": user,  # 🔐 shows logged-in user
+            "user": "guest",   # ✅ no auth
             "message": req.message,
             "response": final_response
         }
@@ -70,10 +66,10 @@ def chat(
 
 
 # =========================
-# 🕘 CHAT HISTORY
+# 🕘 CHAT HISTORY (NO AUTH)
 # =========================
 @router.get("/history")
-def get_chat_history(user: str = Depends(get_current_user)):
+def get_chat_history():
     db = SessionLocal()
 
     try:
