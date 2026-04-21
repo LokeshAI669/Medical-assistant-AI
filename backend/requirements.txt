@@ -17,4 +17,4 @@ typing_extensions==4.15.0
 uvicorn==0.44.0
 groq
 sqlalchemy
-passlib[bcrypt]   ✅ ADD THIS
+passlib[bcrypt]
