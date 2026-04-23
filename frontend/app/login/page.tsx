@@ -1,35 +1,57 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function Login() {
+export default function LoginPage() {
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
-    const res = await fetch("http://127.0.0.1:8000/api/v1/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.access_token) {
+      if (!res.ok) {
+        alert("Login failed ❌");
+        return;
+      }
+
+      // ✅ Save token
       localStorage.setItem("token", data.access_token);
-      window.location.href = "/";
-    } else {
-      alert("Login failed");
+
+      alert("Login successful ✅");
+
+      // ✅ REDIRECT TO CHAT PAGE
+      router.push("/chat");
+
+    } catch (error) {
+      console.error(error);
+      alert("Backend not reachable ❌");
     }
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Login</h1>
+    <div style={{ padding: "20px" }}>
+      <h2>Login</h2>
 
-      <input placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
+      <input
+        type="email"
+        placeholder="Email"
+        onChange={(e) => setEmail(e.target.value)}
+      />
       <br /><br />
 
       <input

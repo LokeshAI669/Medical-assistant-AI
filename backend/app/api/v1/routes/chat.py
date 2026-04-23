@@ -1,62 +1,31 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-
 from app.services.llm_service import get_ai_response
 from app.services.triage_service import analyze_symptoms
+from app.core.security import get_current_user
 
 router = APIRouter()
 
-
-# =========================
-# 📩 REQUEST MODEL
-# =========================
 class ChatRequest(BaseModel):
     message: str
 
+chat_history = []
 
-# =========================
-# 💬 CHAT (NO AUTH + NO DB)
-# =========================
 @router.post("/")
-def chat(req: ChatRequest):
-    try:
-        # 🧠 AI RESPONSE
-        ai_reply = get_ai_response(req.message)
+def chat(req: ChatRequest, user: str = Depends(get_current_user)):
+    ai_reply = get_ai_response(req.message)
+    triage = analyze_symptoms(req.message)
 
-        # 🩺 TRIAGE ANALYSIS
-        triage = analyze_symptoms(req.message)
+    final = f"{ai_reply}\n\nRisk: {triage['risk']}\nAdvice: {triage['advice']}"
 
-        # 🔥 MERGED RESPONSE
-        final_response = f"""
-{ai_reply}
+    chat_history.append({
+        "user": user,
+        "message": req.message,
+        "response": final
+    })
 
--------------------------
+    return {"response": final}
 
-📊 Risk Level: {triage['risk']}
-
-🩺 Advice:
-{triage['advice']}
-"""
-
-        return {
-            "user": "guest",
-            "message": req.message,
-            "response": final_response
-        }
-
-    except Exception as e:
-        return {"error": str(e)}
-
-
-# =========================
-# 🕘 CHAT HISTORY (TEMP)
-# =========================
 @router.get("/history")
-def get_chat_history():
-    return [
-        {
-            "message": "history disabled",
-            "response": "Database removed for deployment",
-            "risk": "N/A"
-        }
-    ]
+def history(user: str = Depends(get_current_user)):
+    return chat_history
